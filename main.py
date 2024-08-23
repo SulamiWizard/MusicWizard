@@ -29,4 +29,8 @@ async def magic_eightball(ctx, *, question):
 async def bruh(ctx):
     await ctx.send("bruv")
 
+@client.command()
+async def ok(ctx):
+    await ctx.send("yes")
+
 client.run(TOKEN)
