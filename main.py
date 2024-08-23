@@ -25,5 +25,8 @@ async def ping(ctx):
 async def magic_eightball(ctx, *, question):
     pass
 
+@client.command()
+async def bruh(ctx):
+    await ctx.send("bruv")
 
 client.run(TOKEN)
