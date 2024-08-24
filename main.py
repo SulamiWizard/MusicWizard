@@ -33,9 +33,4 @@ async def ping(interaction: discord.Interaction):
 async def test(ctx, args):
     await ctx.send(f"Pong {args}")
 
-
-@client.tree.command(name="test", description="testing slash commands")
-async def test(interaction: discord.Interaction):
-    await interaction.response.send_message("it worked!")
-
 client.run(TOKEN)
