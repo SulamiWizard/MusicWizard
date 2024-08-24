@@ -76,6 +76,15 @@ def run_bot():
         except Exception as e:
             print(e)
 
+    @client.command(name="skip")
+    async def skip(ctx):
+        try:
+            voice_clients[ctx.guild.id].stop()
+            await play_next(ctx)
+            await ctx.send("Skipped current track!")
+        except Exception as e:
+            print(e)
+
     @client.command(name="clear_queue")
     async def clear_queue(ctx):
         if ctx.guild.id in queues:
