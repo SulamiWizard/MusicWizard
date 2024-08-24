@@ -35,18 +35,31 @@ def run_bot():
         print(f"{client.user} is now jamming")
 
     async def play_next(ctx):
+        # Checks if there are songs in the queue
+        # If there are songs in the queue, pop the next song and play it
         if queues[ctx.guild.id] != []:
+            # Using queues[ctx.guild.id] is sort of similar to a hash map i think. Correct me and call me an idiot if I am wrong
+            # The same would apply to really anything with a guild.id in the index of an array
+            #
+            # The main reason we use this index [ctx.guild.id] in the array is to allow us to control the bot in each server seperately,
+            # instead of globally controlling all instances of the bot
             link = queues[ctx.guild.id].pop(0)
             await play(ctx, link=link)
 
     @client.command(name="play")
     async def play(ctx, *, link):
+        # This first try/catch statement is solely used to connect to the voice channel that the user is in
+        #
+        # TODO: Add functionality for when the message sender is not currently in any voice channel for the bot to connect to.
+        #   Ideally this would be in the form of a message sent to the channel the command was placed in, could be ephemeral or not.
+        #   Also it should not try to download and play the song if it doesn't have a channel to connect to.
         try:
             voice_client = await ctx.author.voice.channel.connect()
             voice_clients[voice_client.guild.id] = voice_client
         except Exception as e:
             print(e)
 
+        # This next try/catch statement handles the actual downloading and playing of the content from the link passed to the play command
         try:
             if youtube_base_url not in link:
                 query_string = urllib.parse.urlencode({"search_query": link})
@@ -113,11 +126,15 @@ def run_bot():
             voice_clients[ctx.guild.id].stop()
             await voice_clients[ctx.guild.id].disconnect()
             del voice_clients[ctx.guild.id]
+            # Currently the .stop command doesnt actually clear the queue
+            # If we want to actually clear the queue when the bot is stopped, uncomment this next line of code
+            # await clear_queue(ctx)
         except Exception as e:
             print(e)
 
     @client.command(name="queue")
     async def queue(ctx, *, url):
+        # First checks if the queue exists then pushes the song to the back of the queue
         if ctx.guild.id not in queues:
             queues[ctx.guild.id] = []
         queues[ctx.guild.id].append(url)
