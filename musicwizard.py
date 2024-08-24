@@ -126,9 +126,10 @@ def run_bot():
             voice_clients[ctx.guild.id].stop()
             await voice_clients[ctx.guild.id].disconnect()
             del voice_clients[ctx.guild.id]
-            # Currently the .stop command doesnt actually clear the queue
-            # If we want to actually clear the queue when the bot is stopped, uncomment this next line of code
-            # await clear_queue(ctx)
+
+            # Having the queue be cleared when stopping the bot is handled by this next line.
+            # Commenting this line will keep the queue for the the next time the bot joins a channel
+            await clear_queue(ctx)
         except Exception as e:
             print(e)
 
