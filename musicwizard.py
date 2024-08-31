@@ -144,11 +144,17 @@ def run_bot():
             print(e)
 
     @client.command(name="queue")
-    async def queue(ctx, *, url):
-        # First checks if the queue exists then pushes the song to the back of the queue
-        if ctx.guild.id not in queues:
-            queues[ctx.guild.id] = []
-        queues[ctx.guild.id].append(url)
-        await ctx.send("Added to queue!")
+    # url is deafulting to None to allow the parameter to be optional
+    async def queue(ctx, *, url=None):
+        if url is not None:
+            # First checks if the queue exists then pushes the song to the back of the queue
+            if ctx.guild.id not in queues:
+                queues[ctx.guild.id] = []
+            queues[ctx.guild.id].append(url)
+            await ctx.send("Added to queue!")
+        else:
+            for song in queues[ctx.guild.id]:
+                # TODO: show song titles instead of the urls when listing tracks in queue
+                await ctx.send(song)
 
     client.run(TOKEN)
