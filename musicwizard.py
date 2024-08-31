@@ -45,6 +45,10 @@ def run_bot():
             # instead of globally controlling all instances of the bot
             link = queues[ctx.guild.id].pop(0)
             await play(ctx, link=link)
+        else:
+            # Auto disconnect after 2 seconds at the end of the queue
+            await asyncio.sleep(2)
+            await voice_clients[ctx.guild.id].disconnect()
 
     @client.command(name="play")
     async def play(ctx, *, link):
