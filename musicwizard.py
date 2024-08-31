@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 import re
 import urllib.parse
 import urllib.request
@@ -101,6 +102,11 @@ def run_bot():
             await ctx.send("Skipped current track!")
         except Exception as e:
             print(e)
+
+    @client.command(name="shuffle")
+    async def shuffle(ctx):
+        random.shuffle(queues[ctx.guild.id])
+        await ctx.send("The queue has been shuffled!")
 
     @client.command(name="clear_queue")
     async def clear_queue(ctx):
