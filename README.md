@@ -28,13 +28,16 @@ ___
 ```console  
 git clone https://github.com/sulamiwizard/MusicWizard  
 cd MusicWizard  
-```  
+```
+After cloning, make sure that you **read the cloned** `readme.md` to ensure that all additional comments are read.
 
 ### Install Python
 
 Download and install [Python](https://www.python.org/downloads/).
 
 ### Setup Virtual Environment
+
+Complete within the bot's file directory
 
 #### Linux/MacOS Setup
 
@@ -45,13 +48,22 @@ source venv/bin/activate
 
 #### Windows Setup
 
-TBD
+```console
+pip install virtualenv
+python virtualenv.exe venv
+venv\Scripts\activate.bat
+```
+[comment]: <> (this is not tested yet and should be taken with a grain of salt.)
 
 ### Install Internal Dependencies
 
 ```console  
 pip install -r requirements.txt  
-```  
+```
+
+### Create Discord Application
+
+Log into the [Discord developer portal](https://discord.com/developers/applications). In the top right corner, click `New Application`. Once the application is created, click `Bot` on the left side menu. Reset the bot token and copy it using the `Copy` button. Multi-factor authentication information maybe required at this step.
 
 ### Setup Environment Variables
 
