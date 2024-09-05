@@ -33,7 +33,8 @@ def run_bot():
 
     @client.event
     async def on_ready():
-        print(f"{client.user} is now jamming")
+        await client.tree.sync()
+        print(f"{client.user} is now pondering it's orb")
 
     async def play_next(ctx):
         # Checks if there are songs in the queue
@@ -51,7 +52,9 @@ def run_bot():
             await asyncio.sleep(2)
             await voice_clients[ctx.guild.id].disconnect()
 
-    @client.command(name="play")
+    @client.hybrid_command(
+        name="play", with_app_command=True, description="Play or queue a song."
+    )
     async def play(ctx, *, link):
         # This first try/catch statement is solely used to connect to the voice channel that the user is in
         #
@@ -94,7 +97,11 @@ def run_bot():
         except Exception as e:
             print(e)
 
-    @client.command(name="skip")
+    @client.hybrid_command(
+        name="skip",
+        with_app_command=True,
+        description="Skip the currently playing song.",
+    )
     async def skip(ctx):
         try:
             voice_clients[ctx.guild.id].stop()
@@ -103,12 +110,18 @@ def run_bot():
         except Exception as e:
             print(e)
 
-    @client.command(name="shuffle")
+    @client.hybrid_command(
+        name="shuffle", with_app_command=True, description="Shuffle the queue!"
+    )
     async def shuffle(ctx):
         random.shuffle(queues[ctx.guild.id])
         await ctx.send("The queue has been shuffled!")
 
-    @client.command(name="clear_queue")
+    @client.hybrid_command(
+        name="clear",
+        with_app_command=True,
+        description="Clears the queue without skipping the current song.",
+    )
     async def clear_queue(ctx):
         if ctx.guild.id in queues:
             queues[ctx.guild.id].clear()
@@ -116,21 +129,31 @@ def run_bot():
         else:
             await ctx.send("There is no queue to clear")
 
-    @client.command(name="pause")
+    @client.hybrid_command(
+        name="pause", with_app_command=True, description="Pause the current song."
+    )
     async def pause(ctx):
         try:
             voice_clients[ctx.guild.id].pause()
         except Exception as e:
             print(e)
 
-    @client.command(name="resume")
+    @client.hybrid_command(
+        name="resume",
+        with_app_command=True,
+        description="Resume playing the current song.",
+    )
     async def resume(ctx):
         try:
             voice_clients[ctx.guild.id].resume()
         except Exception as e:
             print(e)
 
-    @client.command(name="stop")
+    @client.hybrid_command(
+        name="stop",
+        with_app_command=True,
+        description="Stop the song and clear the queue.",
+    )
     async def stop(ctx):
         try:
             voice_clients[ctx.guild.id].stop()
@@ -143,8 +166,12 @@ def run_bot():
         except Exception as e:
             print(e)
 
-    @client.command(name="queue")
+    @client.hybrid_command(
+        name="queue", with_app_command=True, description="List the songs in the queue."
+    )
     # url is deafulting to None to allow the parameter to be optional
+    # TODO: Make the queue function solely list the queue instead of adding stuff to it.
+    #       Only do this after we get the /play command working as intended
     async def queue(ctx, *, url=None):
         if url is not None:
             # First checks if the queue exists then pushes the song to the back of the queue
