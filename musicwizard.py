@@ -53,7 +53,9 @@ def run_bot():
             await voice_clients[ctx.guild.id].disconnect()
 
     @client.hybrid_command(
-        name="play", with_app_command=True, description="Play or queue a song."
+        name="play",
+        with_app_command=True,
+        description="Plays or adds a song to the queue.",
     )
     async def play(ctx, *, link):
         # This first try/catch statement is solely used to connect to the voice channel that the user is in
@@ -100,7 +102,7 @@ def run_bot():
     @client.hybrid_command(
         name="skip",
         with_app_command=True,
-        description="Skip the currently playing song.",
+        description="Skips the currently playing song.",
     )
     async def skip(ctx):
         try:
@@ -111,7 +113,7 @@ def run_bot():
             print(e)
 
     @client.hybrid_command(
-        name="shuffle", with_app_command=True, description="Shuffle the queue!"
+        name="shuffle", with_app_command=True, description="Shuffles the queue."
     )
     async def shuffle(ctx):
         random.shuffle(queues[ctx.guild.id])
@@ -130,7 +132,7 @@ def run_bot():
             await ctx.send("There is no queue to clear")
 
     @client.hybrid_command(
-        name="pause", with_app_command=True, description="Pause the current song."
+        name="pause", with_app_command=True, description="Pauses the current song."
     )
     async def pause(ctx):
         try:
@@ -141,7 +143,7 @@ def run_bot():
     @client.hybrid_command(
         name="resume",
         with_app_command=True,
-        description="Resume playing the current song.",
+        description="Resumes playing the current song.",
     )
     async def resume(ctx):
         try:
@@ -152,7 +154,7 @@ def run_bot():
     @client.hybrid_command(
         name="stop",
         with_app_command=True,
-        description="Stop the song and clear the queue.",
+        description="Stops the song and clears the queue.",
     )
     async def stop(ctx):
         try:
@@ -167,7 +169,7 @@ def run_bot():
             print(e)
 
     @client.hybrid_command(
-        name="queue", with_app_command=True, description="List the songs in the queue."
+        name="queue", with_app_command=True, description="Lists the songs in the queue."
     )
     # url is deafulting to None to allow the parameter to be optional
     # TODO: Make the queue function solely list the queue instead of adding stuff to it.
