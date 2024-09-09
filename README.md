@@ -14,6 +14,7 @@ A [Discord](https://discord.com) music bot that aims to work with multiple sourc
 | /skip      | Skips the current track.                                                                                                                      |   Complete    |
 | /stop      | Stops playback, clears the current queue, and leaves the voice channel.                                                                       |   Complete    |
 | /shuffle   | Shuffles the order of the queue.                                                                                                              |   Complete    |
+| /move      | Moves a song to a different index in the queue. Accepts negative values                                                                       |   Complete    |
 
 [^1]: Currently, /play is only able to take YouTube links. Non-YouTube links and YouTube playlists are not currently
 supported but implementation is planned. YouTube searching without links is also planned but not available.

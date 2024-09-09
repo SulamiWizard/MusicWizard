@@ -33,24 +33,44 @@ def run_bot():
 
     @client.event
     async def on_ready():
-        await client.tree.sync()
+        # Use this instead of await client.tree.sync to instantly sync your changes with the server you are testing on
+        # and comment out the other client.tree.sync call
+        await client.tree.sync(guild=discord.Object(id=198183299011706880))
+        # await client.tree.sync()
         print(f"{client.user} is now pondering it's orb")
 
-    async def play_next(ctx):
-        # Checks if there are songs in the queue
-        # If there are songs in the queue, pop the next song and play it
-        if queues[ctx.guild.id] != []:
-            # Using queues[ctx.guild.id] is sort of similar to a hash map i think. Correct me and call me an idiot if I am wrong
-            # The same would apply to really anything with a guild.id in the index of an array
-            #
-            # The main reason we use this index [ctx.guild.id] in the array is to allow us to control the bot in each server seperately,
-            # instead of globally controlling all instances of the bot
-            link = queues[ctx.guild.id].pop(0)
-            await play(ctx, link=link)
+    def add_song_to_queue(guild_id, link, title):
+        if guild_id not in queues:
+            queues[guild_id] = []
+        queues[guild_id].append((link, title))
+
+    async def play_from_queue(ctx):
+        if ctx.guild.id in queues and queues[ctx.guild.id]:
+            link, title = queues[ctx.guild.id].pop(0)
+            await play_song(ctx, link, title)
         else:
-            # Auto disconnect after 2 seconds at the end of the queue
             await asyncio.sleep(2)
             await voice_clients[ctx.guild.id].disconnect()
+
+    async def play_song(ctx, link, title):
+        try:
+            voice_client = voice_clients[ctx.guild.id]
+            loop = asyncio.get_event_loop()
+            data = await loop.run_in_executor(
+                None, lambda: ytdl.extract_info(link, download=False)
+            )
+            song_url = data["url"]
+            player = discord.FFmpegOpusAudio(song_url, **ffmpeg_options)
+
+            voice_client.play(
+                player,
+                after=lambda e: asyncio.run_coroutine_threadsafe(
+                    play_from_queue(ctx), client.loop
+                ),
+            )
+            await ctx.send(f"Now Playing: **{title}**")
+        except Exception as e:
+            print(f"Error playing song: {e}")
 
     @client.hybrid_command(
         name="play",
@@ -58,46 +78,61 @@ def run_bot():
         description="Plays or adds a song to the queue.",
     )
     async def play(ctx, *, link):
-        # This first try/catch statement is solely used to connect to the voice channel that the user is in
-        #
-        # TODO: Add functionality for when the message sender is not currently in any voice channel for the bot to connect to.
-        #   Ideally this would be in the form of a message sent to the channel the command was placed in, could be ephemeral or not.
-        #   Also it should not try to download and play the song if it doesn't have a channel to connect to.
+        # Check if the user is in a voice channel
+        if not ctx.author.voice:
+            await ctx.send("You need to be in a voice channel to use this command")
+            return
+
+        # Connect to the voice channle if not already connected
         try:
             voice_client = await ctx.author.voice.channel.connect()
             voice_clients[voice_client.guild.id] = voice_client
-        except Exception as e:
-            print(e)
+        except discord.ClientException:
+            # Already connected to a channel in the server/guild
+            voice_client = voice_clients.get(ctx.guild.id)
 
-        # This next try/catch statement handles the actual downloading and playing of the content from the link passed to the play command
-        try:
-            if youtube_base_url not in link:
-                query_string = urllib.parse.urlencode({"search_query": link})
+        if youtube_base_url not in link:
+            query_string = urllib.parse.urlencode({"search_query": link})
 
-                content = urllib.request.urlopen(youtube_results_url + query_string)
+            content = urllib.request.urlopen(youtube_results_url + query_string)
 
-                search_results = re.findall(
-                    r"/watch\?v=(.{11})", content.read().decode()
-                )
+            search_results = re.findall(r"/watch\?v=(.{11})", content.read().decode())
+            if not search_results:
+                await ctx.send("DEBUG: No results found")
+                return
 
-                link = youtube_watch_url + search_results[0]
+            link = youtube_watch_url + search_results[0]
 
-            loop = asyncio.get_event_loop()
-            data = await loop.run_in_executor(
-                None, lambda: ytdl.extract_info(link, download=False)
-            )
+        # Run Youtube-DL in an async-friendly way and get the song title
+        loop = asyncio.get_event_loop()
+        data = await loop.run_in_executor(
+            None, lambda: ytdl.extract_info(link, download=False)
+        )
 
-            song = data["url"]
-            player = discord.FFmpegOpusAudio(song, **ffmpeg_options)
+        song_title = data["title"]
 
-            voice_clients[ctx.guild.id].play(
-                player,
-                after=lambda e: asyncio.run_coroutine_threadsafe(
-                    play_next(ctx), client.loop
-                ),
-            )
-        except Exception as e:
-            print(e)
+        # Add song to the queue
+        add_song_to_queue(ctx.guild.id, link, song_title)
+        await ctx.send(f"Added to queue: **{song_title}**")
+
+        # If not currently playing, start playing
+        if not voice_clients[ctx.guild.id].is_playing():
+            await play_from_queue(ctx)
+
+    @client.hybrid_command(
+        name="queue", with_app_command=True, description="Lists the songs in the queue."
+    )
+    async def queue(ctx):
+        # Displays the current queue of songs with titles.
+        if ctx.guild.id in queues and queues[ctx.guild.id]:
+            song_titles = [
+                f"{index + 1}. {title}"
+                for index, (_, title) in enumerate(queues[ctx.guild.id])
+            ]
+            output = "\n".join(song_titles)
+            await ctx.send(f"**Current Queue:**\n{output}")
+        else:
+            await ctx.send("The queue is empty!")
 
     @client.hybrid_command(
         name="skip",
@@ -107,7 +142,7 @@ def run_bot():
     async def skip(ctx):
         try:
             voice_clients[ctx.guild.id].stop()
-            await play_next(ctx)
+            await play_from_queue(ctx)
             await ctx.send("Skipped current track!")
         except Exception as e:
             print(e)
@@ -161,29 +196,58 @@ def run_bot():
             voice_clients[ctx.guild.id].stop()
             await voice_clients[ctx.guild.id].disconnect()
             del voice_clients[ctx.guild.id]
-
-            # Having the queue be cleared when stopping the bot is handled by this next line.
-            # Commenting this line will keep the queue for the the next time the bot joins a channel
             await clear_queue(ctx)
         except Exception as e:
             print(e)
 
     @client.hybrid_command(
-        name="queue", with_app_command=True, description="Lists the songs in the queue."
+        name="move", with_app_command=True, description="Moves songs in the queue."
     )
-    # url is deafulting to None to allow the parameter to be optional
-    # TODO: Make the queue function solely list the queue instead of adding stuff to it.
-    #       Only do this after we get the /play command working as intended
-    async def queue(ctx, *, url=None):
-        if url is not None:
-            # First checks if the queue exists then pushes the song to the back of the queue
-            if ctx.guild.id not in queues:
-                queues[ctx.guild.id] = []
-            queues[ctx.guild.id].append(url)
-            await ctx.send("Added to queue!")
-        else:
-            for song in queues[ctx.guild.id]:
-                # TODO: show song titles instead of the urls when listing tracks in queue
-                await ctx.send(song)
+    async def move(ctx, song_index: int, destination_index: int):
+        if ctx.guild.id not in queues or not queues[ctx.guild.id]:
+            await ctx.send("The queue is empty!")
+            return
+
+        # This is a reference to the queue not a copy
+        # Using this just to make the code a bit easier to read
+        queue = queues[ctx.guild.id]
+        queue_length = len(queue)
+
+        # Check if 0 is inputted
+        if song_index == 0 or destination_index == 0:
+            await ctx.send("An index of 0 is not supported.")
+            return
+
+        # Adjust 1-based index to 0-based for positive indices
+        if song_index > 0:
+            song_index -= 1
+        if destination_index > 0:
+            destination_index -= 1
+
+        # Adjust the indices if given a negative number
+        if song_index < 0:
+            song_index = queue_length + song_index
+        if destination_index < 0:
+            destination_index = queue_length + destination_index
+
+        # Check if the inputted indices are within the valid range
+        if not (0 <= song_index < queue_length) or not (
+            0 <= destination_index < queue_length
+        ):
+            await ctx.send(f"Indices must be between 1 and {queue_length}.")
+            return
+
+        # Ensure destination index is not the same as the song index
+        if song_index == destination_index:
+            await ctx.send("The song is already in the desired position.")
+            return
+
+        # Move the song
+        song = queue.pop(song_index)
+        queue.insert(destination_index, song)
+
+        await ctx.send(
+            f"Moved **{song[1]}** to position {destination_index + 1} in the queue."
+        )
 
     client.run(TOKEN)
