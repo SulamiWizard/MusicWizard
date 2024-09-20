@@ -35,8 +35,8 @@ def run_bot():
     async def on_ready():
         # Use this instead of await client.tree.sync to instantly sync your changes with the server you are testing on
         # and comment out the other client.tree.sync call
-        await client.tree.sync(guild=discord.Object(id=198183299011706880))
-        # await client.tree.sync()
+        # await client.tree.sync(guild=discord.Object(id=))
+        await client.tree.sync()
         print(f"{client.user} is now pondering it's orb")
 
     def add_song_to_queue(guild_id, link, title):
