@@ -152,7 +152,7 @@ def run_bot():
     )
     async def shuffle(ctx):
         random.shuffle(queues[ctx.guild.id])
-        await ctx.send("The queue has been shuffled successfully!")
+        await ctx.send("The queue has been shuffled!")
 
     @client.hybrid_command(
         name="clear",
